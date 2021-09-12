@@ -18,26 +18,72 @@ const MAP_DATA = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ]
 
-const CARGO_DATA = [
-  {x: 3, y: 3},
-  {x: 3, y: 4},
-  {x: 3, y: 5},
-  {x: 7, y: 5},
-  {x: 7, y: 6},
-  {x: 7, y: 9},
-]
-
 let screenScale = 1;
 let player;
-let playerX = 5;
-let playerY = 5;
 let map;
-let cargos = [];
 let pointerPressing = false;
-let direction = "s";
-let playerMoving = false;
-let moveDirection = direction;
-let moveCargoIndex = -1;
+let inputDirection = "s";
+let moveCargo = null;
+
+class Player extends PIXI.Sprite {
+  constructor(mapX, mapY, direction) {
+    super();
+    this.anchor.x = 0.5;
+    this.anchor.y = 1;
+    this.texture = PIXI.Texture.from(`actor_s0.png`);
+    this.mapX = mapX;
+    this.mapY = mapY;
+    this.x = TILE_SIZE * this.mapX + TILE_SIZE / 2;
+    this.y = TILE_SIZE * this.mapY + TILE_SIZE - 1;
+    this.moving = false;
+    this.moveDirection = direction;
+  }
+}
+
+class Cargo extends PIXI.Sprite {
+  constructor(mapX, mapY) {
+    super();
+    this.texture = PIXI.Texture.from("item_00.png");
+    this.height = this.width = TILE_SIZE;
+    this.mapX = mapX;
+    this.mapY = mapY;
+    this.x = mapX * TILE_SIZE;
+    this.y = mapY * TILE_SIZE;
+  }
+}
+
+class Cargos extends PIXI.Container {
+  constructor(cargoPoints) {
+    super();
+    this.cargos = [];
+    this.createCargos(cargoPoints);
+  }
+
+  createCargos(cargoPoints) {
+    for (let i = 0; i < cargoPoints.length; i++) {
+      const cargo = new Cargo(cargoPoints[i].x, cargoPoints[i].y);
+      this.addCargo(cargo);
+    }
+  }
+
+  addCargo(cargo) {
+    this.addChild(cargo);
+    this.cargos.push(cargo);
+  }
+
+  getCargo(index) {
+    return this.cargos[index];
+  }
+
+  findCargo(mapX, mapY) {
+    for(let cargo of this.cargos) {
+      if (cargo.mapX === mapX && cargo.mapY === mapY) {
+        return cargo;
+      }
+    }
+    return null;
+  }
+}
 
 function createMap() {
   map = new PIXI.Container();
@@ -67,149 +113,127 @@ function createMap() {
   }
 }
 
-function findCargo(x, y) {
-  for (let i = 0; i < CARGO_DATA.length; i++) {
-    const cargo = CARGO_DATA[i];
-    if (cargo.x === x && cargo.y === y) {
-      return i;
-    }
-  }
-  return -1;
-}
-
 function createCargos() {
-  const cargoContainer = new PIXI.Container();
-  app.stage.addChild(cargoContainer);
-
-  const texture = PIXI.Texture.from("item_00.png");
-  for (let i = 0; i < CARGO_DATA.length; i++) {
-    const cargo = new PIXI.Sprite(texture);
-    cargo.height = cargo.width = TILE_SIZE;
-    cargo.x = CARGO_DATA[i].x * TILE_SIZE;
-    cargo.y = CARGO_DATA[i].y * TILE_SIZE;
-    cargoContainer.addChild(cargo);
-    cargos.push(cargo);
-  }
+  cargos = new Cargos([
+    {x: 3, y: 3},
+    {x: 3, y: 4},
+    {x: 3, y: 5},
+    {x: 7, y: 5},
+    {x: 7, y: 6},
+    {x: 7, y: 9},
+  ]);
+  app.stage.addChild(cargos);
 }
 
 function createPlayer() {
-  player = PIXI.Sprite.from(`actor_s0.png`);
-  player.anchor.x = 0.5;
-  player.anchor.y = 1;
-  player.x = TILE_SIZE * playerX + TILE_SIZE / 2;
-  player.y = TILE_SIZE * playerY + TILE_SIZE - 1;
-
+  player = new Player(5, 5, "s");
   app.stage.addChild(player);
 }
 
 function onFrame(frameCnt) {
-  if (pointerPressing && !playerMoving) {
-    moveDirection = direction;
-    if (direction === "s" && playerY < MAP_ROWS - 1) {
-      if (MAP_DATA[playerY + 1][playerX] !== 1) {
-        const cargoIndex = findCargo(playerX, playerY + 1);
-        if (cargoIndex === -1) {
-          playerY++;
-          playerMoving = true;
+  if (pointerPressing && !player.moving) {
+    player.moveDirection = inputDirection;
+    if (player.moveDirection === "s" && player.mapY < MAP_ROWS - 1) {
+      if (MAP_DATA[player.mapY + 1][player.mapX] !== 1) {
+        const cargo = cargos.findCargo(player.mapX, player.mapY + 1);
+        if (cargo === null) {
+          player.mapY++;
+          player.moving = true;
         } else {
-          const nextCargoIndex = findCargo(playerX, playerY + 2);
-          if (MAP_DATA[playerY + 2][playerX] !== 1 && nextCargoIndex === -1) {
-            playerY++;
-            playerMoving = true;
-            moveCargoIndex = cargoIndex;
-            CARGO_DATA[moveCargoIndex].y++;
+          if (MAP_DATA[player.mapY + 2][player.mapX] !== 1 && cargos.findCargo(player.mapX, player.mapY + 2) === null) {
+            player.mapY++;
+            player.moving = true;
+            moveCargo = cargo;
+            moveCargo.mapY++;
           }
         }
       }
-    } else if (direction === "n" && playerY > 0) {
-      if (MAP_DATA[playerY - 1][playerX] !== 1) {
-        const cargoIndex = findCargo(playerX, playerY - 1);
-        if (cargoIndex === -1) {
-          playerY--;
-          playerMoving = true;
+    } else if (player.moveDirection === "n" && player.mapY > 0) {
+      if (MAP_DATA[player.mapY - 1][player.mapX] !== 1) {
+        const cargo = cargos.findCargo(player.mapX, player.mapY - 1);
+        if (cargo === null) {
+          player.mapY--;
+          player.moving = true;
         } else {
-          const nextCargoIndex = findCargo(playerX, playerY - 2);
-          if (MAP_DATA[playerY - 2][playerX] !== 1 && nextCargoIndex === -1) {
-            playerY--;
-            playerMoving = true;
-            moveCargoIndex = cargoIndex;
-            CARGO_DATA[moveCargoIndex].y--;
+          if (MAP_DATA[player.mapY - 2][player.mapX] !== 1 && cargos.findCargo(player.mapX, player.mapY - 2) === null) {
+            player.mapY--;
+            player.moving = true;
+            moveCargo = cargo;
+            moveCargo.mapY--;
           }
         }
       }
-    } else if (direction === "e" && playerX < MAP_COLS - 1) {
-      if (MAP_DATA[playerY][playerX + 1] !== 1) {
-        const cargoIndex = findCargo(playerX + 1, playerY);
-        if (cargoIndex === -1) {
-          playerX++;
-          playerMoving = true;
+    } else if (player.moveDirection === "e" && player.mapX < MAP_COLS - 1) {
+      if (MAP_DATA[player.mapY][player.mapX + 1] !== 1) {
+        const cargo = cargos.findCargo(player.mapX + 1, player.mapY);
+        if (cargo === null) {
+          player.mapX++;
+          player.moving = true;
         } else {
-          const nextCargoIndex = findCargo(playerX + 2, playerY);
-          if (MAP_DATA[playerY][playerX + 2] !== 1 && nextCargoIndex === -1) {
-            playerX++;
-            playerMoving = true;
-            moveCargoIndex = cargoIndex;
-            CARGO_DATA[moveCargoIndex].x++;
+          if (MAP_DATA[player.mapY][player.mapX + 2] !== 1 && cargos.findCargo(player.mapX + 2, player.mapY) === null) {
+            player.mapX++;
+            player.moving = true;
+            moveCargo = cargo;
+            moveCargo.mapX++;
           }
         }
       }
-    } else if (direction === "w" && playerX > 0) {
-      if (MAP_DATA[playerY][playerX - 1] !== 1) {
-        const cargoIndex = findCargo(playerX - 1, playerY);
-        if (cargoIndex === -1) {
-          playerX--;
-          playerMoving = true;
+    } else if (player.moveDirection === "w" && player.mapX > 0) {
+      if (MAP_DATA[player.mapY][player.mapX - 1] !== 1) {
+        const cargo = cargos.findCargo(player.mapX - 1, player.mapY);
+        if (cargo === null) {
+          player.mapX--;
+          player.moving = true;
         } else {
-          const nextCargoIndex = findCargo(playerX - 2, playerY);
-          if (MAP_DATA[playerY][playerX - 2] !== 1 && nextCargoIndex === -1) {
-            playerX--;
-            playerMoving = true;
-            moveCargoIndex = cargoIndex;
-            CARGO_DATA[moveCargoIndex].x--;
+          if (MAP_DATA[player.mapY][player.mapX - 2] !== 1 && cargos.findCargo(player.mapX - 2, player.mapY) === null) {
+            player.mapX--;
+            player.moving = true;
+            moveCargo = cargo;
+            moveCargo.mapX--;
           }
         }
       }
     }
   }
-  if (playerMoving) {
-    const targetX = TILE_SIZE * playerX + TILE_SIZE / 2;
-    const targetY = TILE_SIZE * playerY + TILE_SIZE - 1;
+  if (player.moving) {
+    const targetX = TILE_SIZE * player.mapX + TILE_SIZE / 2;
+    const targetY = TILE_SIZE * player.mapY + TILE_SIZE - 1;
 
     let walkPattern = Math.floor(frameCnt / 15) % 4;
     walkPattern = walkPattern === 3 ? 1 : walkPattern;
-    player.texture = PIXI.Texture.from(`actor_${moveDirection}${walkPattern}.png`);
+    player.texture = PIXI.Texture.from(`actor_${player.moveDirection}${walkPattern}.png`);
 
     if (targetX > player.x) {
       const moveX = Math.min(MOVE_SPEED, targetX - player.x);
       player.x += moveX;
-      if (moveCargoIndex != -1) {
-        cargos[moveCargoIndex].x += moveX;
+      if (moveCargo !== null) {
+        moveCargo.x += moveX;
       }
     } else if (targetX < player.x) {
       const moveX = Math.min(MOVE_SPEED, player.x - targetX);
       player.x -= moveX;
-      if (moveCargoIndex != -1) {
-        cargos[moveCargoIndex].x -= moveX;
+      if (moveCargo !== null) {
+        moveCargo.x -= moveX;
       }
     } else if (targetY > player.y) {
       const moveY = Math.min(MOVE_SPEED, targetY - player.y);
       player.y += moveY;
-      if (moveCargoIndex != -1) {
-        cargos[moveCargoIndex].y += moveY;
+      if (moveCargo !== null) {
+        moveCargo.y += moveY;
       }
     } else if (targetY < player.y) {
       const moveY = Math.min(MOVE_SPEED, player.y - targetY);
       player.y -= moveY;
-      if (moveCargoIndex != -1) {
-        cargos[moveCargoIndex].y -= moveY;
+      if (moveCargo !== null) {
+        moveCargo.y -= moveY;
       }
     }
     if (targetX === player.x && targetY === player.y) {
-      playerMoving = false;
-      moveCargoIndex = -1;
+      player.moving = false;
+      moveCargo = null;
     }
   } else {
-    player.texture = PIXI.Texture.from(`actor_${moveDirection}1.png`);
+    player.texture = PIXI.Texture.from(`actor_${player.moveDirection}1.png`);
   }
 }
 
@@ -233,12 +257,12 @@ function toDirection(e) {
 
 function onPointerDown(e) {
   pointerPressing = true;
-  direction = toDirection(e);
+  inputDirection = toDirection(e);
 }
 
 function onPointerMove(e) {
   if (pointerPressing) {
-    direction = toDirection(e);
+    inputDirection = toDirection(e);
   }
 }
 
