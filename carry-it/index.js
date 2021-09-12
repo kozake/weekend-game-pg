@@ -215,6 +215,9 @@ class Cargos extends PIXI.Container {
   }
 }
 
+const SCREEN_WIDTH = Map.TILE_SIZE * MAP_DATA[0].length;
+const SCREEN_HEIGHT = Map.TILE_SIZE * MAP_DATA.length;
+
 class Game {
   app = null;
   screenScale = 1;
@@ -225,14 +228,13 @@ class Game {
   moveCargo = null;
 
   onResize() {
-    const parent = this.app.view.parentNode;
     this.screenScale = Math.min(
-      parent.clientWidth / this.app.stage.width,
-      parent.clientHeight / this.app.stage.height
+      document.body.clientWidth / SCREEN_WIDTH,
+      document.body.clientHeight / SCREEN_HEIGHT
     );
-    this.app.stage.width *= this.screenScale;
-    this.app.stage.height *= this.screenScale;
-    this.app.renderer.resize(parent.clientWidth, parent.clientHeight);
+    this.app.stage.width = SCREEN_WIDTH * this.screenScale;
+    this.app.stage.height = SCREEN_HEIGHT * this.screenScale;
+    this.app.renderer.resize(document.body.clientWidth, document.body.clientHeight);
   }
 
   onLoad() {
@@ -282,8 +284,8 @@ class Game {
   start() {
     this.app = new PIXI.Application({
       backgroundColor: 0x1099bb,
-      width: Map.TILE_SIZE * MAP_DATA[0].length,
-      height: Map.TILE_SIZE * MAP_DATA.length,
+      width: SCREEN_WIDTH,
+      height: SCREEN_HEIGHT,
     });
     document.body.appendChild(this.app.view);
     this.app.stop();
