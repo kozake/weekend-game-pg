@@ -3,21 +3,6 @@ const MOVE_SPEED = 3;
 const MAP_COLS = 16;
 const MAP_ROWS = 12;
 
-const MAP_DATA = [
-  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
-  [1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
-  [1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1],
-  [1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 2, 2, 1],
-  [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 1],
-  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 1],
-  [1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1],
-  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1],
-  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1],
-  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-]
-
 let screenScale = 1;
 let player;
 let map;
@@ -35,13 +20,13 @@ class Input {
     this.pointerPressing = true;
     this.direction = this._toDirection(e);
   }
-  
+
   onPointerMove(e) {
     if (this.pointerPressing) {
       this.direction = this._toDirection(e);
     }
   }
-  
+
   onPointerUp(e) {
     this.pointerPressing = false;
   }
@@ -77,6 +62,43 @@ class Player extends PIXI.Sprite {
     this.y = TILE_SIZE * this.mapY + TILE_SIZE - 1;
     this.moving = false;
     this.moveDirection = direction;
+  }
+}
+
+class Map extends PIXI.Container {
+  constructor(mapData) {
+    super();
+    this.mapData = mapData;
+
+    this._createTile();
+  }
+
+  isWall(mapX, mapY) {
+    return this.mapData[mapY][mapX] === 1;
+  }
+
+  _createTile() {
+    const field = PIXI.Texture.from("map_00.png");
+    const wall = PIXI.Texture.from("item_01.png");
+    const goal = PIXI.Texture.from("map_01.png");
+
+    for (let row = 0; row < this.mapData.length; row++) {
+      for (let col = 0; col < this.mapData[0].length; col++) {
+        const tile = new PIXI.Sprite();
+        if (this.mapData[row][col] === 1) {
+          tile.texture = wall;
+        } else if (this.mapData[row][col] === 2) {
+          tile.texture = goal;
+        } else {
+          tile.texture = field;
+        }
+        tile.height = tile.width = TILE_SIZE;
+        tile.x = col * TILE_SIZE;
+        tile.y = row * TILE_SIZE;
+
+        this.addChild(tile);
+      }
+    }
   }
 }
 
@@ -116,7 +138,7 @@ class Cargos extends PIXI.Container {
   }
 
   findCargo(mapX, mapY) {
-    for(let cargo of this.cargos) {
+    for (let cargo of this.cargos) {
       if (cargo.mapX === mapX && cargo.mapY === mapY) {
         return cargo;
       }
@@ -126,41 +148,31 @@ class Cargos extends PIXI.Container {
 }
 
 function createMap() {
-  map = new PIXI.Container();
+  map = new Map([
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+    [1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 2, 2, 1],
+    [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 1],
+    [1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+  ]);
   app.stage.addChild(map);
-
-  const field = PIXI.Texture.from("map_00.png");
-  const wall = PIXI.Texture.from("item_01.png");
-  const goal = PIXI.Texture.from("map_01.png");
-
-  for (let i = 0; i < 192; i++) {
-    const row = Math.floor(i / 16);
-    const col = (i % 16);
-
-    const tile = new PIXI.Sprite();
-    if (MAP_DATA[row][col] === 1) {
-      tile.texture = wall;
-    } else if (MAP_DATA[row][col] === 2) {
-      tile.texture = goal;
-    } else {
-      tile.texture = field;
-    }
-    tile.height = tile.width = TILE_SIZE;
-    tile.x = col * TILE_SIZE;
-    tile.y = row * TILE_SIZE;
-
-    map.addChild(tile);
-  }
 }
 
 function createCargos() {
   cargos = new Cargos([
-    {x: 3, y: 3},
-    {x: 3, y: 4},
-    {x: 3, y: 5},
-    {x: 7, y: 5},
-    {x: 7, y: 6},
-    {x: 7, y: 9},
+    { x: 3, y: 3 },
+    { x: 3, y: 4 },
+    { x: 3, y: 5 },
+    { x: 7, y: 5 },
+    { x: 7, y: 6 },
+    { x: 7, y: 9 },
   ]);
   app.stage.addChild(cargos);
 }
@@ -174,13 +186,16 @@ function onFrame(frameCnt) {
   if (input.pointerPressing && !player.moving) {
     player.moveDirection = input.direction;
     if (player.moveDirection === "s" && player.mapY < MAP_ROWS - 1) {
-      if (MAP_DATA[player.mapY + 1][player.mapX] !== 1) {
+      if (!map.isWall(player.mapX, player.mapY + 1)) {
         const cargo = cargos.findCargo(player.mapX, player.mapY + 1);
         if (cargo === null) {
           player.mapY++;
           player.moving = true;
         } else {
-          if (MAP_DATA[player.mapY + 2][player.mapX] !== 1 && cargos.findCargo(player.mapX, player.mapY + 2) === null) {
+          if (
+            !map.isWall(player.mapX, player.mapY + 2) &&
+            cargos.findCargo(player.mapX, player.mapY + 2) === null
+          ) {
             player.mapY++;
             player.moving = true;
             moveCargo = cargo;
@@ -189,13 +204,16 @@ function onFrame(frameCnt) {
         }
       }
     } else if (player.moveDirection === "n" && player.mapY > 0) {
-      if (MAP_DATA[player.mapY - 1][player.mapX] !== 1) {
+      if (!map.isWall(player.mapX, player.mapY - 1)) {
         const cargo = cargos.findCargo(player.mapX, player.mapY - 1);
         if (cargo === null) {
           player.mapY--;
           player.moving = true;
         } else {
-          if (MAP_DATA[player.mapY - 2][player.mapX] !== 1 && cargos.findCargo(player.mapX, player.mapY - 2) === null) {
+          if (
+            !map.isWall(player.mapX, player.mapY - 2) &&
+            cargos.findCargo(player.mapX, player.mapY - 2) === null
+          ) {
             player.mapY--;
             player.moving = true;
             moveCargo = cargo;
@@ -204,13 +222,16 @@ function onFrame(frameCnt) {
         }
       }
     } else if (player.moveDirection === "e" && player.mapX < MAP_COLS - 1) {
-      if (MAP_DATA[player.mapY][player.mapX + 1] !== 1) {
+      if (!map.isWall(player.mapX + 1, player.mapY)) {
         const cargo = cargos.findCargo(player.mapX + 1, player.mapY);
         if (cargo === null) {
           player.mapX++;
           player.moving = true;
         } else {
-          if (MAP_DATA[player.mapY][player.mapX + 2] !== 1 && cargos.findCargo(player.mapX + 2, player.mapY) === null) {
+          if (
+            !map.isWall(player.mapX + 2, player.mapY) &&
+            cargos.findCargo(player.mapX + 2, player.mapY) === null
+          ) {
             player.mapX++;
             player.moving = true;
             moveCargo = cargo;
@@ -219,13 +240,16 @@ function onFrame(frameCnt) {
         }
       }
     } else if (player.moveDirection === "w" && player.mapX > 0) {
-      if (MAP_DATA[player.mapY][player.mapX - 1] !== 1) {
+      if (!map.isWall(player.mapX - 1, player.mapY)) {
         const cargo = cargos.findCargo(player.mapX - 1, player.mapY);
         if (cargo === null) {
           player.mapX--;
           player.moving = true;
         } else {
-          if (MAP_DATA[player.mapY][player.mapX - 2] !== 1 && cargos.findCargo(player.mapX - 2, player.mapY) === null) {
+          if (
+            !map.isWall(player.mapX - 2, player.mapY) &&
+            cargos.findCargo(player.mapX - 2, player.mapY) === null
+          ) {
             player.mapX--;
             player.moving = true;
             moveCargo = cargo;
@@ -241,7 +265,9 @@ function onFrame(frameCnt) {
 
     let walkPattern = Math.floor(frameCnt / 15) % 4;
     walkPattern = walkPattern === 3 ? 1 : walkPattern;
-    player.texture = PIXI.Texture.from(`actor_${player.moveDirection}${walkPattern}.png`);
+    player.texture = PIXI.Texture.from(
+      `actor_${player.moveDirection}${walkPattern}.png`
+    );
 
     if (targetX > player.x) {
       const moveX = Math.min(MOVE_SPEED, targetX - player.x);
@@ -279,7 +305,10 @@ function onFrame(frameCnt) {
 
 function onResize() {
   const parent = app.view.parentNode;
-  screenScale = Math.min(parent.clientWidth / app.stage.width, parent.clientHeight / app.stage.height);
+  screenScale = Math.min(
+    parent.clientWidth / app.stage.width,
+    parent.clientHeight / app.stage.height
+  );
   app.stage.width *= screenScale;
   app.stage.height *= screenScale;
   app.renderer.resize(parent.clientWidth, parent.clientHeight);
@@ -304,7 +333,7 @@ function onLoad() {
   app.stage.on("pointermove", (e) => input.onPointerMove(e));
   app.stage.on("pointerup", (e) => input.onPointerUp(e));
   app.stage.on("pointerupoutside", (e) => input.onPointerUp(e));
-  window.addEventListener('resize', () => onResize());
+  window.addEventListener("resize", () => onResize());
   onResize();
 
   let frameCnt = 0;
