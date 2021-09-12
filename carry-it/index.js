@@ -326,7 +326,7 @@ class Game {
           } else {
             if (
               !this.map.isWall(check) &&
-              this.cargos.findCargo(check) === null
+              this.cargos.findCargo(check.mapX, check.mapY) === null
             ) {
               this.player.mapX = target.mapX;
               this.player.mapY = target.mapY;
