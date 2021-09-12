@@ -2,6 +2,7 @@
  * MAPデータ
  * 0: 通路
  * 1: 壁
+ * 2: ゴール
  */
 const MAP_DATA = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -17,13 +18,6 @@ const MAP_DATA = [
   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ];
-
-let screenScale = 1;
-let player = null;
-let map = null;
-let cargos = null;
-let input = null;
-let moveCargo = null;
 
 class Input {
   constructor() {
@@ -47,8 +41,8 @@ class Input {
   }
 
   _toDirection(e) {
-    const distanceX = player.x - e.data.global.x / screenScale;
-    const distanceY = player.y - e.data.global.y / screenScale;
+    const distanceX = $game.player.x - e.data.global.x / $game.screenScale;
+    const distanceY = $game.player.y - e.data.global.y / $game.screenScale;
     if (Math.abs(distanceX) > Math.abs(distanceY)) {
       if (distanceX > 0) {
         return "w";
@@ -66,7 +60,7 @@ class Input {
 }
 
 class Player extends PIXI.Sprite {
-  MOVE_SPEED = 3;
+  static MOVE_SPEED = 3;
 
   constructor(mapX, mapY, direction) {
     super();
@@ -80,6 +74,47 @@ class Player extends PIXI.Sprite {
     this.moving = false;
     this.moveDirection = direction;
   }
+
+  move(frameCnt) {
+    const moveDistance = { x: 0, y: 0 };
+    if (this.moving) {
+      const targetX = Map.TILE_SIZE * this.mapX + Map.TILE_SIZE / 2;
+      const targetY = Map.TILE_SIZE * this.mapY + Map.TILE_SIZE - 1;
+
+      if (targetX > this.x) {
+        moveDistance.x = Math.min(Player.MOVE_SPEED, targetX - this.x);
+      } else if (targetX < this.x) {
+        moveDistance.x = Math.max(-1 * Player.MOVE_SPEED, targetX - this.x);
+      } else if (targetY > this.y) {
+        moveDistance.y = Math.min(Player.MOVE_SPEED, targetY - this.y);
+      } else if (targetY < this.y) {
+        moveDistance.y = Math.max(-1 * Player.MOVE_SPEED, targetY - this.y);
+      }
+
+      this._updateWalkPattern(frameCnt);
+      this.x += moveDistance.x;
+      this.y += moveDistance.y;
+
+      if (targetX === this.x && targetY === this.y) {
+        this.moving = false;
+      }
+    }
+
+    this._updateWalkPattern(frameCnt);
+    return moveDistance;
+  }
+
+  _updateWalkPattern(frameCnt) {
+    if (this.moving) {
+      let walkPattern = Math.floor(frameCnt / 15) % 4;
+      walkPattern = walkPattern === 3 ? 1 : walkPattern;
+      this.texture = PIXI.Texture.from(
+        `actor_${this.moveDirection}${walkPattern}.png`
+      );
+    } else {
+      this.texture = PIXI.Texture.from(`actor_${this.moveDirection}1.png`);
+    }
+  }
 }
 
 class Map extends PIXI.Container {
@@ -92,16 +127,17 @@ class Map extends PIXI.Container {
     this._createTile();
   }
 
-  isWall(mapX, mapY) {
-    return this.mapData[mapY][mapX] === 1;
+  isWall(point) {
+    return this.mapData[point.mapY][point.mapX] === 1;
   }
 
-  withinMapX(mapX) {
-    return 0 <= mapX && mapX < this.mapData[0].length;
-  }
-
-  withinMapY(mapY) {
-    return 0 <= mapY && mapY < this.mapData.length;
+  within(point) {
+    return (
+      0 <= point.mapX &&
+      point.mapX < this.mapData[0].length &&
+      0 <= point.mapY &&
+      point.mapY < this.mapData.length
+    );
   }
 
   _createTile() {
@@ -139,6 +175,11 @@ class Cargo extends PIXI.Sprite {
     this.x = mapX * Map.TILE_SIZE;
     this.y = mapY * Map.TILE_SIZE;
   }
+
+  move(moveDistance) {
+    this.x += moveDistance.x;
+    this.y += moveDistance.y;
+  }
 }
 
 class Cargos extends PIXI.Container {
@@ -174,191 +215,138 @@ class Cargos extends PIXI.Container {
   }
 }
 
-function onFrame(frameCnt) {
-  if (input.pointerPressing && !player.moving) {
-    player.moveDirection = input.direction;
-    if (player.moveDirection === "s" && map.withinMapY(player.mapY)) {
-      if (!map.isWall(player.mapX, player.mapY + 1)) {
-        const cargo = cargos.findCargo(player.mapX, player.mapY + 1);
-        if (cargo === null) {
-          player.mapY++;
-          player.moving = true;
-        } else {
-          if (
-            !map.isWall(player.mapX, player.mapY + 2) &&
-            cargos.findCargo(player.mapX, player.mapY + 2) === null
-          ) {
-            player.mapY++;
-            player.moving = true;
-            moveCargo = cargo;
-            moveCargo.mapY++;
-          }
-        }
-      }
-    } else if (player.moveDirection === "n" && player.mapY > 0) {
-      if (!map.isWall(player.mapX, player.mapY - 1)) {
-        const cargo = cargos.findCargo(player.mapX, player.mapY - 1);
-        if (cargo === null) {
-          player.mapY--;
-          player.moving = true;
-        } else {
-          if (
-            !map.isWall(player.mapX, player.mapY - 2) &&
-            cargos.findCargo(player.mapX, player.mapY - 2) === null
-          ) {
-            player.mapY--;
-            player.moving = true;
-            moveCargo = cargo;
-            moveCargo.mapY--;
-          }
-        }
-      }
-    } else if (player.moveDirection === "e" && map.withinMapX(player.mapX)) {
-      if (!map.isWall(player.mapX + 1, player.mapY)) {
-        const cargo = cargos.findCargo(player.mapX + 1, player.mapY);
-        if (cargo === null) {
-          player.mapX++;
-          player.moving = true;
-        } else {
-          if (
-            !map.isWall(player.mapX + 2, player.mapY) &&
-            cargos.findCargo(player.mapX + 2, player.mapY) === null
-          ) {
-            player.mapX++;
-            player.moving = true;
-            moveCargo = cargo;
-            moveCargo.mapX++;
-          }
-        }
-      }
-    } else if (player.moveDirection === "w" && player.mapX > 0) {
-      if (!map.isWall(player.mapX - 1, player.mapY)) {
-        const cargo = cargos.findCargo(player.mapX - 1, player.mapY);
-        if (cargo === null) {
-          player.mapX--;
-          player.moving = true;
-        } else {
-          if (
-            !map.isWall(player.mapX - 2, player.mapY) &&
-            cargos.findCargo(player.mapX - 2, player.mapY) === null
-          ) {
-            player.mapX--;
-            player.moving = true;
-            moveCargo = cargo;
-            moveCargo.mapX--;
-          }
-        }
-      }
-    }
-  }
-  if (player.moving) {
-    const targetX = Map.TILE_SIZE * player.mapX + Map.TILE_SIZE / 2;
-    const targetY = Map.TILE_SIZE * player.mapY + Map.TILE_SIZE - 1;
+class Game {
+  app = null;
+  screenScale = 1;
+  player = null;
+  map = null;
+  cargos = null;
+  input = null;
+  moveCargo = null;
 
-    let walkPattern = Math.floor(frameCnt / 15) % 4;
-    walkPattern = walkPattern === 3 ? 1 : walkPattern;
-    player.texture = PIXI.Texture.from(
-      `actor_${player.moveDirection}${walkPattern}.png`
+  onResize() {
+    const parent = this.app.view.parentNode;
+    this.screenScale = Math.min(
+      parent.clientWidth / this.app.stage.width,
+      parent.clientHeight / this.app.stage.height
+    );
+    this.app.stage.width *= this.screenScale;
+    this.app.stage.height *= this.screenScale;
+    this.app.renderer.resize(parent.clientWidth, parent.clientHeight);
+  }
+
+  onLoad() {
+    this.map = new Map(MAP_DATA);
+    this.app.stage.addChild(this.map);
+
+    this.cargos = new Cargos([
+      { x: 3, y: 3 },
+      { x: 3, y: 4 },
+      { x: 3, y: 5 },
+      { x: 7, y: 5 },
+      { x: 7, y: 6 },
+      { x: 7, y: 9 },
+    ]);
+    this.app.stage.addChild(this.cargos);
+
+    this.player = new Player(5, 5, "s");
+    this.app.stage.addChild(this.player);
+
+    this.input = new Input();
+
+    this.app.stage.interactive = true;
+    // 空のコンテナでインタラクションを有効にするにはhitAreaの指定が必要
+    this.app.stage.hitArea = new PIXI.Rectangle(
+      0,
+      0,
+      this.app.screen.width,
+      this.app.screen.height
     );
 
-    if (targetX > player.x) {
-      const moveX = Math.min(player.MOVE_SPEED, targetX - player.x);
-      player.x += moveX;
-      if (moveCargo !== null) {
-        moveCargo.x += moveX;
+    this.app.stage.on("pointerdown", (e) => this.input.onPointerDown(e));
+    this.app.stage.on("pointermove", (e) => this.input.onPointerMove(e));
+    this.app.stage.on("pointerup", (e) => this.input.onPointerUp(e));
+    this.app.stage.on("pointerupoutside", (e) => this.input.onPointerUp(e));
+    window.addEventListener("resize", () => this.onResize());
+    this.onResize();
+
+    let frameCnt = 0;
+    this.app.ticker.add(() => {
+      frameCnt++;
+      this.onFrame(frameCnt);
+    });
+
+    this.app.start();
+  }
+
+  start() {
+    this.app = new PIXI.Application({
+      backgroundColor: 0x1099bb,
+      width: Map.TILE_SIZE * MAP_DATA[0].length,
+      height: Map.TILE_SIZE * MAP_DATA.length,
+    });
+    document.body.appendChild(this.app.view);
+    this.app.stop();
+    this.app.loader
+      .add("actor", "actor.json")
+      .add("item", "item.json")
+      .add("map", "map.json")
+      .load(() => this.onLoad());
+  }
+
+  onFrame(frameCnt) {
+    if (this.input.pointerPressing && !this.player.moving) {
+      this.player.moveDirection = this.input.direction;
+      const target = { mapX: this.player.mapX, mapY: this.player.mapY };
+      const check = { ...target };
+
+      if (this.player.moveDirection === "s") {
+        target.mapY += 1;
+        check.mapY += 2;
+      } else if (this.player.moveDirection === "n") {
+        target.mapY -= 1;
+        check.mapY -= 2;
+      } else if (this.player.moveDirection === "e") {
+        target.mapX += 1;
+        check.mapX += 2;
+      } else if (this.player.moveDirection === "w") {
+        target.mapX -= 1;
+        check.mapX -= 2;
       }
-    } else if (targetX < player.x) {
-      const moveX = Math.min(player.MOVE_SPEED, player.x - targetX);
-      player.x -= moveX;
-      if (moveCargo !== null) {
-        moveCargo.x -= moveX;
-      }
-    } else if (targetY > player.y) {
-      const moveY = Math.min(player.MOVE_SPEED, targetY - player.y);
-      player.y += moveY;
-      if (moveCargo !== null) {
-        moveCargo.y += moveY;
-      }
-    } else if (targetY < player.y) {
-      const moveY = Math.min(player.MOVE_SPEED, player.y - targetY);
-      player.y -= moveY;
-      if (moveCargo !== null) {
-        moveCargo.y -= moveY;
+
+      if (this.map.within(target)) {
+        if (!this.map.isWall(target)) {
+          const cargo = this.cargos.findCargo(target.mapX, target.mapY);
+          if (cargo === null) {
+            this.player.mapX = target.mapX;
+            this.player.mapY = target.mapY;
+            this.player.moving = true;
+          } else {
+            if (
+              !this.map.isWall(check) &&
+              this.cargos.findCargo(check) === null
+            ) {
+              this.player.mapX = target.mapX;
+              this.player.mapY = target.mapY;
+              this.player.moving = true;
+              this.moveCargo = cargo;
+              this.moveCargo.mapX = check.mapX;
+              this.moveCargo.mapY = check.mapY;
+            }
+          }
+        }
       }
     }
-    if (targetX === player.x && targetY === player.y) {
-      player.moving = false;
-      moveCargo = null;
+
+    const moveDistance = this.player.move(frameCnt);
+    if (this.moveCargo !== null) {
+      this.moveCargo.move(moveDistance);
     }
-  } else {
-    player.texture = PIXI.Texture.from(`actor_${player.moveDirection}1.png`);
+    if (!this.player.moving) {
+      this.moveCargo = null;
+    }
   }
 }
 
-function onResize() {
-  const parent = app.view.parentNode;
-  screenScale = Math.min(
-    parent.clientWidth / app.stage.width,
-    parent.clientHeight / app.stage.height
-  );
-  app.stage.width *= screenScale;
-  app.stage.height *= screenScale;
-  app.renderer.resize(parent.clientWidth, parent.clientHeight);
-}
-
-function onLoad() {
-  map = new Map(MAP_DATA);
-  app.stage.addChild(map);
-
-  cargos = new Cargos([
-    { x: 3, y: 3 },
-    { x: 3, y: 4 },
-    { x: 3, y: 5 },
-    { x: 7, y: 5 },
-    { x: 7, y: 6 },
-    { x: 7, y: 9 },
-  ]);
-  app.stage.addChild(cargos);
-
-  player = new Player(5, 5, "s");
-  app.stage.addChild(player);
-
-  input = new Input();
-
-  app.stage.interactive = true;
-  // 空のコンテナでインタラクションを有効にするにはhitAreaの指定が必要
-  app.stage.hitArea = new PIXI.Rectangle(
-    0,
-    0,
-    app.screen.width,
-    app.screen.height
-  );
-
-  app.stage.on("pointerdown", (e) => input.onPointerDown(e));
-  app.stage.on("pointermove", (e) => input.onPointerMove(e));
-  app.stage.on("pointerup", (e) => input.onPointerUp(e));
-  app.stage.on("pointerupoutside", (e) => input.onPointerUp(e));
-  window.addEventListener("resize", () => onResize());
-  onResize();
-
-  let frameCnt = 0;
-  app.ticker.add(() => {
-    frameCnt++;
-    onFrame(frameCnt);
-  });
-
-  app.start();
-}
-
-const app = new PIXI.Application({
-  backgroundColor: 0x1099bb,
-  width: Map.TILE_SIZE * MAP_DATA[0].length,
-  height: Map.TILE_SIZE * MAP_DATA.length,
-});
-document.body.appendChild(app.view);
-app.stop();
-app.loader
-  .add("actor", "actor.json")
-  .add("item", "item.json")
-  .add("map", "map.json")
-  .load(() => onLoad());
+$game = new Game();
+$game.start();
