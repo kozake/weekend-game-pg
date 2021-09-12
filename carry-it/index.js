@@ -228,9 +228,10 @@ class Game {
   moveCargo = null;
 
   onResize() {
+    // 20pxは適当な余裕ぶん
     this.screenScale = Math.min(
-      document.body.clientWidth / SCREEN_WIDTH,
-      document.body.clientHeight / SCREEN_HEIGHT
+      (window.innerWidth - 20) / SCREEN_WIDTH,
+      (window.innerHeight - 20) / SCREEN_HEIGHT
     );
     this.app.stage.width = SCREEN_WIDTH * this.screenScale;
     this.app.stage.height = SCREEN_HEIGHT * this.screenScale;
