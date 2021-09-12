@@ -1,10 +1,28 @@
-const TILE_SIZE = 48;
+/**
+ * MAPデータ
+ * 0: 通路
+ * 1: 壁
+ */
+const MAP_DATA = [
+  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+  [1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+  [1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1],
+  [1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 2, 2, 1],
+  [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 1],
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 1],
+  [1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1],
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1],
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1],
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+];
 
 let screenScale = 1;
-let player;
-let map;
-let cargos;
-let input;
+let player = null;
+let map = null;
+let cargos = null;
+let input = null;
 let moveCargo = null;
 
 class Input {
@@ -57,14 +75,16 @@ class Player extends PIXI.Sprite {
     this.texture = PIXI.Texture.from(`actor_s0.png`);
     this.mapX = mapX;
     this.mapY = mapY;
-    this.x = TILE_SIZE * this.mapX + TILE_SIZE / 2;
-    this.y = TILE_SIZE * this.mapY + TILE_SIZE - 1;
+    this.x = Map.TILE_SIZE * this.mapX + Map.TILE_SIZE / 2;
+    this.y = Map.TILE_SIZE * this.mapY + Map.TILE_SIZE - 1;
     this.moving = false;
     this.moveDirection = direction;
   }
 }
 
 class Map extends PIXI.Container {
+  static TILE_SIZE = 48;
+
   constructor(mapData) {
     super();
     this.mapData = mapData;
@@ -99,9 +119,9 @@ class Map extends PIXI.Container {
         } else {
           tile.texture = field;
         }
-        tile.height = tile.width = TILE_SIZE;
-        tile.x = col * TILE_SIZE;
-        tile.y = row * TILE_SIZE;
+        tile.height = tile.width = Map.TILE_SIZE;
+        tile.x = col * Map.TILE_SIZE;
+        tile.y = row * Map.TILE_SIZE;
 
         this.addChild(tile);
       }
@@ -113,11 +133,11 @@ class Cargo extends PIXI.Sprite {
   constructor(mapX, mapY) {
     super();
     this.texture = PIXI.Texture.from("item_00.png");
-    this.height = this.width = TILE_SIZE;
+    this.height = this.width = Map.TILE_SIZE;
     this.mapX = mapX;
     this.mapY = mapY;
-    this.x = mapX * TILE_SIZE;
-    this.y = mapY * TILE_SIZE;
+    this.x = mapX * Map.TILE_SIZE;
+    this.y = mapY * Map.TILE_SIZE;
   }
 }
 
@@ -152,41 +172,6 @@ class Cargos extends PIXI.Container {
     }
     return null;
   }
-}
-
-function createMap() {
-  map = new Map([
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
-    [1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
-    [1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 2, 2, 1],
-    [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 1],
-    [1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  ]);
-  app.stage.addChild(map);
-}
-
-function createCargos() {
-  cargos = new Cargos([
-    { x: 3, y: 3 },
-    { x: 3, y: 4 },
-    { x: 3, y: 5 },
-    { x: 7, y: 5 },
-    { x: 7, y: 6 },
-    { x: 7, y: 9 },
-  ]);
-  app.stage.addChild(cargos);
-}
-
-function createPlayer() {
-  player = new Player(5, 5, "s");
-  app.stage.addChild(player);
 }
 
 function onFrame(frameCnt) {
@@ -267,8 +252,8 @@ function onFrame(frameCnt) {
     }
   }
   if (player.moving) {
-    const targetX = TILE_SIZE * player.mapX + TILE_SIZE / 2;
-    const targetY = TILE_SIZE * player.mapY + TILE_SIZE - 1;
+    const targetX = Map.TILE_SIZE * player.mapX + Map.TILE_SIZE / 2;
+    const targetY = Map.TILE_SIZE * player.mapY + Map.TILE_SIZE - 1;
 
     let walkPattern = Math.floor(frameCnt / 15) % 4;
     walkPattern = walkPattern === 3 ? 1 : walkPattern;
@@ -322,9 +307,22 @@ function onResize() {
 }
 
 function onLoad() {
-  createMap();
-  createCargos();
-  createPlayer();
+  map = new Map(MAP_DATA);
+  app.stage.addChild(map);
+
+  cargos = new Cargos([
+    { x: 3, y: 3 },
+    { x: 3, y: 4 },
+    { x: 3, y: 5 },
+    { x: 7, y: 5 },
+    { x: 7, y: 6 },
+    { x: 7, y: 9 },
+  ]);
+  app.stage.addChild(cargos);
+
+  player = new Player(5, 5, "s");
+  app.stage.addChild(player);
+
   input = new Input();
 
   app.stage.interactive = true;
@@ -354,8 +352,8 @@ function onLoad() {
 
 const app = new PIXI.Application({
   backgroundColor: 0x1099bb,
-  width: TILE_SIZE * 16,
-  height: TILE_SIZE * 12,
+  width: Map.TILE_SIZE * MAP_DATA[0].length,
+  height: Map.TILE_SIZE * MAP_DATA.length,
 });
 document.body.appendChild(app.view);
 app.stop();
