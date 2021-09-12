@@ -234,7 +234,7 @@ class Game {
     );
     this.app.stage.width = SCREEN_WIDTH * this.screenScale;
     this.app.stage.height = SCREEN_HEIGHT * this.screenScale;
-    this.app.renderer.resize(document.body.clientWidth, document.body.clientHeight);
+    this.app.renderer.resize(this.app.stage.width, this.app.stage.height);
   }
 
   onLoad() {
