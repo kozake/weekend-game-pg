@@ -1,7 +1,4 @@
 const TILE_SIZE = 48;
-const MOVE_SPEED = 3;
-const MAP_COLS = 16;
-const MAP_ROWS = 12;
 
 let screenScale = 1;
 let player;
@@ -51,6 +48,8 @@ class Input {
 }
 
 class Player extends PIXI.Sprite {
+  MOVE_SPEED = 3;
+
   constructor(mapX, mapY, direction) {
     super();
     this.anchor.x = 0.5;
@@ -75,6 +74,14 @@ class Map extends PIXI.Container {
 
   isWall(mapX, mapY) {
     return this.mapData[mapY][mapX] === 1;
+  }
+
+  withinMapX(mapX) {
+    return 0 <= mapX && mapX < this.mapData[0].length;
+  }
+
+  withinMapY(mapY) {
+    return 0 <= mapY && mapY < this.mapData.length;
   }
 
   _createTile() {
@@ -185,7 +192,7 @@ function createPlayer() {
 function onFrame(frameCnt) {
   if (input.pointerPressing && !player.moving) {
     player.moveDirection = input.direction;
-    if (player.moveDirection === "s" && player.mapY < MAP_ROWS - 1) {
+    if (player.moveDirection === "s" && map.withinMapY(player.mapY)) {
       if (!map.isWall(player.mapX, player.mapY + 1)) {
         const cargo = cargos.findCargo(player.mapX, player.mapY + 1);
         if (cargo === null) {
@@ -221,7 +228,7 @@ function onFrame(frameCnt) {
           }
         }
       }
-    } else if (player.moveDirection === "e" && player.mapX < MAP_COLS - 1) {
+    } else if (player.moveDirection === "e" && map.withinMapX(player.mapX)) {
       if (!map.isWall(player.mapX + 1, player.mapY)) {
         const cargo = cargos.findCargo(player.mapX + 1, player.mapY);
         if (cargo === null) {
@@ -270,25 +277,25 @@ function onFrame(frameCnt) {
     );
 
     if (targetX > player.x) {
-      const moveX = Math.min(MOVE_SPEED, targetX - player.x);
+      const moveX = Math.min(player.MOVE_SPEED, targetX - player.x);
       player.x += moveX;
       if (moveCargo !== null) {
         moveCargo.x += moveX;
       }
     } else if (targetX < player.x) {
-      const moveX = Math.min(MOVE_SPEED, player.x - targetX);
+      const moveX = Math.min(player.MOVE_SPEED, player.x - targetX);
       player.x -= moveX;
       if (moveCargo !== null) {
         moveCargo.x -= moveX;
       }
     } else if (targetY > player.y) {
-      const moveY = Math.min(MOVE_SPEED, targetY - player.y);
+      const moveY = Math.min(player.MOVE_SPEED, targetY - player.y);
       player.y += moveY;
       if (moveCargo !== null) {
         moveCargo.y += moveY;
       }
     } else if (targetY < player.y) {
-      const moveY = Math.min(MOVE_SPEED, player.y - targetY);
+      const moveY = Math.min(player.MOVE_SPEED, player.y - targetY);
       player.y -= moveY;
       if (moveCargo !== null) {
         moveCargo.y -= moveY;
@@ -347,8 +354,8 @@ function onLoad() {
 
 const app = new PIXI.Application({
   backgroundColor: 0x1099bb,
-  width: TILE_SIZE * MAP_COLS,
-  height: TILE_SIZE * MAP_ROWS,
+  width: TILE_SIZE * 16,
+  height: TILE_SIZE * 12,
 });
 document.body.appendChild(app.view);
 app.stop();
