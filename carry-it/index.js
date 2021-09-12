@@ -21,9 +21,49 @@ const MAP_DATA = [
 let screenScale = 1;
 let player;
 let map;
-let pointerPressing = false;
-let inputDirection = "s";
+let cargos;
+let input;
 let moveCargo = null;
+
+class Input {
+  constructor() {
+    this.pointerPressing = false;
+    this.direction = "s";
+  }
+
+  onPointerDown(e) {
+    this.pointerPressing = true;
+    this.direction = this._toDirection(e);
+  }
+  
+  onPointerMove(e) {
+    if (this.pointerPressing) {
+      this.direction = this._toDirection(e);
+    }
+  }
+  
+  onPointerUp(e) {
+    this.pointerPressing = false;
+  }
+
+  _toDirection(e) {
+    const distanceX = player.x - e.data.global.x / screenScale;
+    const distanceY = player.y - e.data.global.y / screenScale;
+    if (Math.abs(distanceX) > Math.abs(distanceY)) {
+      if (distanceX > 0) {
+        return "w";
+      } else {
+        return "e";
+      }
+    } else {
+      if (distanceY > 0) {
+        return "n";
+      } else {
+        return "s";
+      }
+    }
+  }
+}
 
 class Player extends PIXI.Sprite {
   constructor(mapX, mapY, direction) {
@@ -131,8 +171,8 @@ function createPlayer() {
 }
 
 function onFrame(frameCnt) {
-  if (pointerPressing && !player.moving) {
-    player.moveDirection = inputDirection;
+  if (input.pointerPressing && !player.moving) {
+    player.moveDirection = input.direction;
     if (player.moveDirection === "s" && player.mapY < MAP_ROWS - 1) {
       if (MAP_DATA[player.mapY + 1][player.mapX] !== 1) {
         const cargo = cargos.findCargo(player.mapX, player.mapY + 1);
@@ -237,39 +277,6 @@ function onFrame(frameCnt) {
   }
 }
 
-function toDirection(e) {
-  const distanceX = player.x - e.data.global.x / screenScale;
-  const distanceY = player.y - e.data.global.y / screenScale;
-  if (Math.abs(distanceX) > Math.abs(distanceY)) {
-    if (distanceX > 0) {
-      return "w";
-    } else {
-      return "e";
-    }
-  } else {
-    if (distanceY > 0) {
-      return "n";
-    } else {
-      return "s";
-    }
-  }
-}
-
-function onPointerDown(e) {
-  pointerPressing = true;
-  inputDirection = toDirection(e);
-}
-
-function onPointerMove(e) {
-  if (pointerPressing) {
-    inputDirection = toDirection(e);
-  }
-}
-
-function onPointerUp(e) {
-  pointerPressing = false;
-}
-
 function onResize() {
   const parent = app.view.parentNode;
   screenScale = Math.min(parent.clientWidth / app.stage.width, parent.clientHeight / app.stage.height);
@@ -282,6 +289,7 @@ function onLoad() {
   createMap();
   createCargos();
   createPlayer();
+  input = new Input();
 
   app.stage.interactive = true;
   // 空のコンテナでインタラクションを有効にするにはhitAreaの指定が必要
@@ -292,10 +300,10 @@ function onLoad() {
     app.screen.height
   );
 
-  app.stage.on("pointerdown", (e) => onPointerDown(e));
-  app.stage.on("pointermove", (e) => onPointerMove(e));
-  app.stage.on("pointerup", (e) => onPointerUp(e));
-  app.stage.on("pointerupoutside", (e) => onPointerUp(e));
+  app.stage.on("pointerdown", (e) => input.onPointerDown(e));
+  app.stage.on("pointermove", (e) => input.onPointerMove(e));
+  app.stage.on("pointerup", (e) => input.onPointerUp(e));
+  app.stage.on("pointerupoutside", (e) => input.onPointerUp(e));
   window.addEventListener('resize', () => onResize());
   onResize();
 
