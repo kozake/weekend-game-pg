@@ -1,0 +1,25 @@
+{
+  "frames": {
+    "map_00.png": {
+      "frame": { "x": 0, "y": 0, "w": 32, "h": 32 },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 32, "h": 32 },
+      "sourceSize": { "w": 32, "h": 32 }
+    },
+    "map_01.png": {
+      "frame": { "x": 192, "y": 192, "w": 32, "h": 32 },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 32, "h": 32 },
+      "sourceSize": { "w": 32, "h": 32 }
+    }
+  },
+  "meta": {
+    "version": "1.0",
+    "image": "map.png",
+    "format": "RGBA8888",
+    "size": { "w": 512, "h": 384 },
+    "scale": "1"
+  }
+}

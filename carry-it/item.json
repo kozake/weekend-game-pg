@@ -1,0 +1,26 @@
+{
+    "frames": {
+      "item_00.png": {
+        "frame": { "x": 288, "y": 96, "w": 32, "h": 32 },
+        "rotated": false,
+        "trimmed": false,
+        "spriteSourceSize": { "x": 0, "y": 0, "w": 32, "h": 32 },
+        "sourceSize": { "w": 32, "h": 32 }
+      },
+      "item_01.png": {
+        "frame": { "x": 352, "y": 64, "w": 32, "h": 32 },
+        "rotated": false,
+        "trimmed": false,
+        "spriteSourceSize": { "x": 0, "y": 0, "w": 32, "h": 32 },
+        "sourceSize": { "w": 32, "h": 32 }
+      }
+    },
+    "meta": {
+      "version": "1.0",
+      "image": "item.png",
+      "format": "RGBA8888",
+      "size": { "w": 512, "h": 512 },
+      "scale": "1"
+    }
+  }
+  
