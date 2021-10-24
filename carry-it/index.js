@@ -10,15 +10,15 @@ const MAP_DATA = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
   [1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
-  [1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1],
-  [1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 2, 2, 1],
+  [1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1],
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 2, 1],
   [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 1],
-  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 1],
-  [1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1],
-  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1],
-  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1],
+  [1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 2, 1],
+  [1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1],
+  [1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1],
+  [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1],
   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1],
 ];
 
 class Player extends PIXI.Sprite {
@@ -190,13 +190,14 @@ class Game {
   moveCargo = null;
 
   onResize() {
+    // 20pxは適当な余裕ぶん
     this.screenScale = Math.min(
-      document.body.clientWidth / SCREEN_WIDTH,
-      document.body.clientHeight / SCREEN_HEIGHT
+      (window.innerWidth - 20) / SCREEN_WIDTH,
+      (window.innerHeight - 20) / SCREEN_HEIGHT
     );
     this.app.stage.width = SCREEN_WIDTH * this.screenScale;
     this.app.stage.height = SCREEN_HEIGHT * this.screenScale;
-    this.app.renderer.resize(document.body.clientWidth, document.body.clientHeight);
+    this.app.renderer.resize(this.app.stage.width, this.app.stage.height);
   }
 
   onLoad() {
@@ -213,7 +214,7 @@ class Game {
     ]);
     this.app.stage.addChild(this.cargos);
 
-    this.player = new Player(5, 5, "s");
+    this.player = new Player(8, 11, "s");
     this.app.stage.addChild(this.player);
 
     this.input = new InputPad(200, 200, this.app);
@@ -287,7 +288,7 @@ class Game {
           } else {
             if (
               !this.map.isWall(check) &&
-              this.cargos.findCargo(check) === null
+              this.cargos.findCargo(check.mapX, check.mapY) === null
             ) {
               this.player.mapX = target.mapX;
               this.player.mapY = target.mapY;
