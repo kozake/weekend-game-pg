@@ -31,8 +31,22 @@ export class InputPad extends PIXI.Container {
   }
 
   _onPointerDown(event) {
-    this.pointerPressing = true;
-    this._updateStick(event);
+    const radius = Math.min(this.width, this.height) / 2;
+
+    // 入力パッド内での座標を取得
+    const pos = event.data.getLocalPosition(this);
+
+    // 中心を(0,0)としたx座標とy座標を求める
+    const posX = pos.x - this.width / 2;
+    const posY = pos.y - this.height / 2;
+
+    // 中心からの距離を算出
+    const distance = Math.sqrt(Math.pow(posX, 2) + Math.pow(posY, 2));
+
+    if (distance < radius) {
+      this.pointerPressing = true;
+      this._updateStick(event);
+    }
   }
 
   _onPointerMove(event) {
