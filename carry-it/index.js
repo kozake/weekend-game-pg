@@ -1,3 +1,5 @@
+import { InputPad } from "./input.js";
+
 /**
  * MAPデータ
  * 0: 通路
@@ -18,46 +20,6 @@ const MAP_DATA = [
   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ];
-
-class Input {
-  constructor() {
-    this.pointerPressing = false;
-    this.direction = "s";
-  }
-
-  onPointerDown(e) {
-    this.pointerPressing = true;
-    this.direction = this._toDirection(e);
-  }
-
-  onPointerMove(e) {
-    if (this.pointerPressing) {
-      this.direction = this._toDirection(e);
-    }
-  }
-
-  onPointerUp(e) {
-    this.pointerPressing = false;
-  }
-
-  _toDirection(e) {
-    const distanceX = $game.player.x - e.data.global.x / $game.screenScale;
-    const distanceY = $game.player.y - e.data.global.y / $game.screenScale;
-    if (Math.abs(distanceX) > Math.abs(distanceY)) {
-      if (distanceX > 0) {
-        return "w";
-      } else {
-        return "e";
-      }
-    } else {
-      if (distanceY > 0) {
-        return "n";
-      } else {
-        return "s";
-      }
-    }
-  }
-}
 
 class Player extends PIXI.Sprite {
   static MOVE_SPEED = 3;
@@ -254,7 +216,10 @@ class Game {
     this.player = new Player(5, 5, "s");
     this.app.stage.addChild(this.player);
 
-    this.input = new Input();
+    this.input = new InputPad(200, 200, this.app);
+    this.input.x = 10;
+    this.input.y = 360;
+    this.app.stage.addChild(this.input);
 
     this.app.stage.interactive = true;
     // 空のコンテナでインタラクションを有効にするにはhitAreaの指定が必要
@@ -265,10 +230,6 @@ class Game {
       this.app.screen.height
     );
 
-    this.app.stage.on("pointerdown", (e) => this.input.onPointerDown(e));
-    this.app.stage.on("pointermove", (e) => this.input.onPointerMove(e));
-    this.app.stage.on("pointerup", (e) => this.input.onPointerUp(e));
-    this.app.stage.on("pointerupoutside", (e) => this.input.onPointerUp(e));
     window.addEventListener("resize", () => this.onResize());
     this.onResize();
 
@@ -350,5 +311,5 @@ class Game {
   }
 }
 
-$game = new Game();
+const $game = new Game();
 $game.start();
